@@ -1,0 +1,67 @@
+---
+title: "Dissertation Results Template: Weight Stigma in Nutrition Social Media"
+format:
+  docx: default
+execute:
+  echo: false
+---
+
+# Methods
+
+## Data Extraction and Dataset
+
+[Describe platforms, date range, inclusion criteria, and total posts (`N = ...`).]
+
+## Text Preprocessing
+
+[Describe URL/punctuation/number cleanup, lowercasing, stopword removal, optional stemming/lemmatisation, and tokenisation process.]
+
+## Frequency and N-gram Analysis
+
+[State purpose: language characterisation by category, not direct stigma diagnosis.]
+
+## Sentiment Analysis (Complementary)
+
+[Specify lexicons used and state limitations in nutrition/stigma context.]
+
+## Human Coding of Weight Stigma
+
+[State binary + multi-code framework, coder training, independent coding process, and adjudication approach.]
+
+## Inter-rater Reliability
+
+[Report Cohen's kappa and/or Fleiss' kappa with interpretation bands.]
+
+## Statistical Analysis
+
+[Describe chi-square testing and Cramer's V effect size for category comparisons.]
+
+# Results
+
+## Sample Characteristics
+
+[Insert counts and percentages by category/platform/date.] 
+
+## Frequency and Theme Patterns
+
+[Summarise key words, bigrams, trigrams, and TF-IDF terms.] 
+
+## Sentiment Patterns
+
+[Summarise sentiment findings and avoid equating sentiment with stigma.] 
+
+## Weight Stigma Prevalence
+
+[Report prevalence by category and test results.] 
+
+## Reliability
+
+[Report kappa and disagreement/adjudication outcomes.] 
+
+# Discussion Prompts
+
+- What communication patterns may risk reinforcing weight stigma?
+- How can dietitians frame guidance without moralising body size or food choice?
+- Which findings are exploratory vs robust?
+- What are the limits of platform-specific sampling and lexicon methods?
+- What practical recommendations follow for patient-centred public health messaging?

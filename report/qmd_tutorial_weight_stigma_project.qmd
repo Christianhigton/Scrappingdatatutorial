@@ -1,0 +1,1433 @@
+---
+title: "Weight Stigma Dissertation Workflow (Positron + R)"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    code-summary: "Show code"
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Overview
+
+This tutorial runs a full dissertation workflow for nutrition-related social media text analysis, comparing:
+
+- `weight_loss` posts
+- `health_focused` posts
+
+Research focus:
+
+1. Is weight stigma present?
+2. Is stigma more frequent in `weight_loss` content?
+3. What words/phrases/themes are most common by category?
+4. How do sentiment patterns differ?
+5. How strongly do human coders agree?
+
+::: {.callout-important}
+## Conceptual Rule
+Treat **weight stigma coding** and **sentiment analysis** as separate analyses.
+
+- Human coding is the primary method for stigma identification.
+- Lexicon sentiment is exploratory context, not a direct stigma measure.
+:::
+
+# Professional and Scope Statement
+
+::: {.callout-important}
+## Author, Credentials, and Contact
+This tutorial was prepared by **Dr Chris Higton** (`f.higton@ucb.ac.uk`), a **Chartered Health Psychologist** and **HCPC-registered Practitioner Psychologist**.
+
+Dr Higton is **not a dietitian**. This material is for research and education and should not be treated as individual dietetic or medical advice.
+
+If you have questions about this tutorial, please email `f.higton@ucb.ac.uk`.
+:::
+
+# AI Authorship and Human-in-the-Loop
+
+::: {.callout-important}
+## Codex Support and Verification
+This tutorial was developed with support from **Codex**.
+
+All outputs were checked and validated by **Dr Chris Higton** before use.
+:::
+
+::: {.callout-warning}
+## Human-in-the-Loop Rule
+Do not use analysis, code, or written interpretation unless you understand the underlying logic and can explain it.
+
+Analogy:
+- It is often easier to **understand** spoken French than to **speak** French accurately.
+- In the same way, generated code may look familiar, but you should only use what you can independently explain and defend.
+:::
+
+# Project Structure
+
+Expected folders:
+
+- `data_raw/`
+- `data_clean/`
+- `scripts/`
+- `outputs/figures/`
+- `outputs/tables/`
+- `docs/codebook/`
+- `report/`
+
+::: {.callout-note}
+## What is happening?
+You are building a reproducible pipeline where each script does one job and writes outputs to fixed folders. This makes your methods auditable for dissertation marking and journal peer review.
+:::
+
+# Positron Setup (Quick Start)
+
+## Download and Install
+
+1. Install **R** from `https://cloud.r-project.org/` (Positron recommends R 4.2+ for R workflows).
+2. Install **Positron** from `https://positron.posit.co/install.html`.
+3. Open Positron and choose `File -> Open Folder...` to open your dissertation project folder.
+
+::: {.callout-tip}
+## Official Links
+- Positron main page: `https://positron.posit.co/`
+- Positron install guide: `https://positron.posit.co/install.html`
+- R download: `https://cloud.r-project.org/`
+:::
+
+## Understanding Positron Panes
+
+If you wrote "pains," this means **panes** in Positron.
+
+- **Activity Bar**: switch between Explorer, Search, Source Control, Extensions.
+- **Primary Side Bar**: file explorer and project navigation.
+- **Editor**: where you write scripts and `.qmd` files.
+- **Panel**: Console, Terminal, and Output.
+- **Secondary Side Bar**: Session/Variables, Plots, Help, Viewer, Connections.
+
+## Create the Dissertation Folder Structure in Positron Terminal
+
+```{bash create_project_structure}
+#| eval: false
+mkdir -p dissertation-weight-stigma/{data_raw,data_clean,scripts,outputs/figures,outputs/tables,docs/codebook,report}
+```
+
+Then open that folder in Positron and place your scripts and data in the matching subfolders.
+
+## Using Codex to Set Up Faster
+
+You can ask Codex to scaffold the project and scripts, then you review outputs before running:
+
+- "Create the folder structure and numbered scripts for my dissertation workflow."
+- "Add defensive checks and save outputs to `outputs/tables` and `outputs/figures`."
+- "Generate a codebook template and coder instructions."
+
+::: {.callout-warning}
+## Check Before Running
+Always verify generated code, package versions, API terms, and ethics constraints before large data collection runs.
+:::
+
+::: {.callout-warning}
+## Digital Divide, Equity, and AI Policy
+If AI tools are expected for coursework or research productivity, access should be equitable.
+
+- Be careful about the digital divide (device quality, connectivity, paid tool access, accessibility needs).
+- UCB should provide or signpost equitable access to approved LLM tools where needed.
+- UCB AI policy is being updated, so always check the latest institutional guidance before submission.
+:::
+
+# Recommended Reading and Core References
+
+Use these resources to strengthen methods, transparency, and reproducibility:
+
+- **Methods in Ecology and Evolution article** (link provided): `https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210x.70267`
+- **Text Mining with R (tidy text methods)**: `https://www.tidytextmining.com/`
+- **R for Data Science (2e)**: `https://r4ds.hadley.nz/`
+
+::: {.callout-note}
+## How to use these in your dissertation
+- Use *Text Mining with R* to justify tokenisation, sentiment lexicon workflows, and n-gram logic.
+- Use *R for Data Science* for reproducible workflow standards (projects, wrangling, plotting, and communication).
+- Use the linked *Methods in Ecology and Evolution* paper as a methods-critical reference where relevant to your study design and reporting.
+:::
+
+# Script Run Order
+
+Run the in-document sections in this order:
+
+1. `1) Setup`
+2. `2) Import + Clean + Tokenise`
+3. `3) Frequency + N-grams + TF-IDF`
+4. `4) Sentiment Analysis (Exploratory)`
+5. `5) Build Codebook + Coder Template`
+6. `6) Inter-rater Reliability`
+7. `7) Statistical Comparison of Stigma by Category`
+
+::: {.callout-tip}
+## Code Dropdowns
+Each section uses Quarto code dropdown options (`code-fold`) so you can expand/collapse code as needed.
+Click **Show code** to open the code box for that section.
+:::
+
+::: {.callout-tip}
+## Raw Data Location
+Put your social media CSV files in `data_raw/` before running section `2) Import + Clean + Tokenise`.
+
+Required columns:
+`post_id`, `platform`, `date`, `author`, `text`, `url`, `category`
+:::
+
+# Responsible Scraping (If You Collect Data Yourself)
+
+::: {.callout-warning}
+## Avoid Overloading Websites
+When scraping posts, collect data slowly and respectfully.
+
+- Check `robots.txt` and platform Terms of Service first.
+- Prefer official APIs when available.
+- Add delays between requests (for example 2-5 seconds plus random jitter).
+- Use pagination limits and cap requests per minute.
+- Use a clear `User-Agent` that identifies a research contact.
+- Stop or slow down when you receive `429` or `503` responses.
+- Retry with exponential backoff instead of rapid repeated requests.
+- Cache results locally so you do not repeatedly hit the same URLs.
+:::
+
+```{r polite_scraping_example}
+#| eval: false
+# Example polite request pattern (httr2)
+library(httr2)
+
+safe_get <- function(url, pause_seconds = 3, max_tries = 5) {
+  for (i in seq_len(max_tries)) {
+    Sys.sleep(pause_seconds + runif(1, 0, 1.5))
+
+    resp <- request(url) |>
+      req_user_agent("MSc-dietetics-research/0.1 (contact: f.higton@ucb.ac.uk)") |>
+      req_perform()
+
+    status <- resp_status(resp)
+
+    if (status < 400) return(resp)
+
+    if (status %in% c(429, 503)) {
+      # Exponential backoff reduces pressure on the host server.
+      Sys.sleep(2 ^ i)
+    } else {
+      break
+    }
+  }
+  stop("Request failed after retries: ", url)
+}
+```
+
+::: {.callout-note}
+## Detailed Explanation of This Example
+1. `safe_get()` is a wrapper function for web requests that prioritizes server safety and research ethics.
+2. `pause_seconds + runif(1, 0, 1.5)` adds a base pause and random jitter, so your requests do not look like a bot hammering a site at fixed intervals.
+3. `req_user_agent(...)` clearly identifies your project and provides a contact email, which is good professional practice.
+4. `resp_status(resp)` checks the HTTP status code after each request.
+5. If status is below 400, the request succeeded and the response is returned immediately.
+6. If status is `429` (rate limit) or `503` (service unavailable), the code waits longer each time with `2 ^ i` (exponential backoff) before retrying.
+7. `max_tries` prevents infinite retry loops and limits server pressure.
+8. The final `stop(...)` ensures failed URLs are logged as explicit errors so you can report exclusions transparently.
+9. To adapt this for your dissertation, keep `pause_seconds` conservative and record your retry policy in Methods.
+:::
+
+::: {.callout-note}
+## What is happening?
+These safeguards reduce risk of overloading websites and improve ethical transparency.
+In your methods section, report your request rate, delay policy, and how you handled rate limits.
+:::
+
+# Package Options by Scraping Type
+
+::: {.callout-note}
+## Package List You Can Use
+As of **April 21, 2026**, these are common R options for different scraping/data-ingestion tasks.
+:::
+
+## 1) General Web Scraping
+
+- `rvest`: most common for HTML scraping.
+- `httr`: HTTP requests (`GET`, `POST`) and API interaction.
+- `RCurl`: lower-level `libcurl` interface.
+- `xml2`: parse/process HTML and XML.
+
+## 2) Structured Data (Tables, JSON, APIs)
+
+- `jsonlite`: parse/convert JSON.
+- `tidyjson`: work with deeply nested JSON in tidy workflows.
+- `httr` (or `httr2`): API requests and authentication flows.
+
+## 3) Dynamic / JavaScript-Rendered Pages
+
+- `RSelenium`: browser automation for JS-rendered content.
+- `webdriver`: browser control package (historically tied to PhantomJS workflows).
+- `rvest + splashr`: older headless-browser pattern for JS-heavy pages.
+
+::: {.callout-warning}
+## Practical Note
+For many modern JS pages, `chromote` is often a more current option than older PhantomJS-based workflows.
+:::
+
+## 4) Scraping and Parsing PDFs
+
+- `pdftools`: extract text/metadata/render pages.
+- `tm`: text mining pipeline on extracted text.
+- `tabulizer`: extract tables from PDFs.
+
+## 5) Social Media Data Collection
+
+- `rtweet`: X/Twitter API workflows (package status changes; verify current availability).
+- `Rfacebook`: Facebook API package (legacy; API access is heavily restricted).
+- `twitteR`: older Twitter package (legacy).
+- `RedditExtractoR`: toolkit for structured Reddit thread extraction.
+- `rtoot`: Mastodon API package for federated instance data collection.
+
+::: {.callout-warning}
+## Status Snapshot (as of April 21, 2026)
+- `rtweet` was archived/removed from CRAN on **April 7, 2025**.
+- `twitteR` was archived/removed from CRAN on **February 17, 2025**.
+- `Rfacebook` remains an older package (last CRAN release in 2017), so compatibility with current Facebook/Meta API policy can be limited.
+:::
+
+::: {.callout-important}
+## API Reality Check
+For social media platforms, API terms, pricing tiers, and accessible endpoints change frequently. Always confirm current policy before data collection and include this in methods/ethics reporting.
+:::
+
+## Reddit-Specific Notes
+
+- Prefer Reddit's official API routes and follow current developer terms.
+- Use conservative request rates and documented pagination.
+- Keep a transparent sampling log (subreddits, search terms, date window, pull date).
+
+```{r reddit_collection_example}
+#| eval: false
+install.packages("RedditExtractoR")
+library(RedditExtractoR)
+
+# Example: find relevant threads, then pull thread + comment content
+thread_urls <- find_thread_urls(
+  keywords = "weight stigma nutrition",
+  subreddit = "nutrition",
+  sort_by = "top",
+  period = "year"
+)
+
+reddit_data <- get_thread_content(thread_urls$url[1:50])
+```
+
+::: {.callout-note}
+## Detailed Explanation of This Example
+1. `find_thread_urls(...)` first builds a sampling frame of relevant thread URLs, rather than scraping random pages.
+2. `keywords` defines your topic filter (`"weight stigma nutrition"`).
+3. `subreddit = "nutrition"` narrows scope to one community, which improves methodological clarity.
+4. `sort_by = "top"` and `period = "year"` define how posts are ranked and over what window.
+5. `get_thread_content(...)` then retrieves structured thread metadata and comment content from selected URLs.
+6. `thread_urls$url[1:50]` caps collection to a manageable subset for pilot analysis; increase only after checking feasibility and ethics.
+7. In reporting, state exactly how many threads were initially found and how many were retained.
+8. Save raw pulls and cleaned pulls separately so you can audit preprocessing decisions.
+:::
+
+## Mastodon-Specific Notes
+
+- Mastodon is federated, so instance choice matters (`mastodon.social`, `fosstodon.org`, etc.).
+- Record the instance and whether data are local/global timeline pulls.
+- Use `rtoot` token/auth workflows where required.
+
+```{r mastodon_collection_example}
+#| eval: false
+install.packages("rtoot")
+library(rtoot)
+
+# Public timeline example (anonymous where allowed):
+mastodon_posts <- get_timeline_public(
+  instance = "mastodon.social",
+  limit = 100,
+  anonymous = TRUE
+)
+```
+
+::: {.callout-note}
+## Detailed Explanation of This Example
+1. `rtoot` connects to Mastodon APIs in a tidy R workflow.
+2. `get_timeline_public(...)` queries public posts from a selected instance.
+3. `instance = "mastodon.social"` is critical because Mastodon is federated; different instances can produce different discourse samples.
+4. `limit = 100` sets a clear sample cap for one request pass.
+5. `anonymous = TRUE` attempts an unauthenticated request where allowed by the target instance.
+6. If you need deeper or repeated pulls, use authenticated tokens and document token scope and collection dates.
+7. For reproducibility, record whether you used local timeline filtering and any pagination strategy.
+:::
+
+## Bluesky-Specific Options
+
+- `bskyr`: R package for Bluesky/AT Protocol workflows.
+- `httr` + `jsonlite`: useful fallback for custom endpoint calls.
+
+```{r bluesky_collection_example}
+#| eval: false
+# Recommended first option for Bluesky:
+install.packages("bskyr")
+library(bskyr)
+
+# If you need a custom endpoint, use httr/jsonlite:
+library(httr)
+library(jsonlite)
+```
+
+::: {.callout-note}
+## Detailed Explanation of This Example
+1. `bskyr` is the high-level option for most Bluesky data tasks in R.
+2. Installing and loading `bskyr` gives you endpoint-specific helper functions with tidy outputs.
+3. `httr` + `jsonlite` is shown as a fallback for endpoints not yet wrapped by `bskyr`.
+4. This two-path approach is practical for dissertation work: start with stable wrappers, then use low-level API calls only when needed.
+5. If you use low-level calls, document endpoint URLs, parameters, and response schema decisions in Methods.
+:::
+
+# Platform Status Caveats (Important)
+
+::: {.callout-warning}
+## Keep This Updated in Your Dissertation
+- Some packages above are legacy or may be archived.
+- Availability on CRAN can change over time.
+- Platform APIs can become read-limited or paid-only.
+
+In your final methods chapter, include the exact package versions and access conditions used at the time of collection.
+:::
+
+# Visualise Data for Dissertation Outputs
+
+Use visuals to complement coding results, not replace them.
+
+- Frequency bar charts: show dominant vocabulary by category.
+- TF-IDF comparisons: show distinctive terms.
+- Sentiment plots: show exploratory polarity/emotion distributions.
+- Stacked stigma plots: show prevalence and subtype composition.
+- Reliability visuals: confusion matrix and disagreement summaries.
+
+```{r visualisation_example_plot}
+#| eval: false
+library(readr)
+library(ggplot2)
+
+stigma_prev <- read_csv("outputs/tables/stigma_prevalence_by_category.csv")
+
+ggplot(stigma_prev, aes(category, percent, fill = stigma_binary)) +
+  geom_col() +
+  labs(
+    title = "Weight Stigma Prevalence by Category",
+    x = NULL,
+    y = "Percent of posts",
+    fill = "Stigma"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+::: {.callout-note}
+## Detailed Explanation of This Example
+1. The table `stigma_prevalence_by_category.csv` is read from your saved outputs, ensuring your figure is generated from reproducible analysis files.
+2. `aes(category, percent, fill = stigma_binary)` maps category to x-axis, prevalence to y-axis, and stigma presence/absence to bar color.
+3. `geom_col()` draws bars directly from the provided percentages.
+4. `labs(...)` applies publication-ready labels for dissertation figures.
+5. `theme_minimal(base_size = 12)` improves readability and keeps style clean for academic reporting.
+6. To improve journal readiness, set a fixed color palette across all figures and export with high DPI.
+:::
+
+::: {.callout-note}
+## What is happening?
+This ensures your dissertation includes clear, publication-ready figures linked directly to saved analysis tables.
+:::
+
+# 1) Setup
+
+```{r section_01_setup}
+#| eval: false
+#| code-fold: true
+#| code-summary: "Show setup code (packages + helper functions)"
+# 01 setup (self-contained in this QMD)
+
+required_packages <- c(
+  "tidyverse",
+  "tidytext",
+  "textdata",
+  "janitor",
+  "lubridate",
+  "stringi",
+  "SnowballC",
+  "here",
+  "irr",
+  "effectsize",
+  "scales",
+  "patchwork"
+)
+
+missing_packages <- required_packages[
+  !vapply(required_packages, requireNamespace, FUN.VALUE = logical(1), quietly = TRUE)
+]
+
+if (length(missing_packages) > 0) {
+  install.packages(missing_packages, repos = "https://cloud.r-project.org")
+}
+
+invisible(lapply(required_packages, library, character.only = TRUE))
+
+# Shared helper utilities used in later sections
+project_paths <- list(
+  raw = here::here("data_raw"),
+  clean = here::here("data_clean"),
+  outputs = here::here("outputs"),
+  figures = here::here("outputs", "figures"),
+  tables = here::here("outputs", "tables"),
+  codebook = here::here("docs", "codebook"),
+  ratings = here::here("docs", "codebook", "ratings"),
+  report = here::here("report")
+)
+
+invisible(lapply(project_paths, dir.create, recursive = TRUE, showWarnings = FALSE))
+
+required_columns <- c(
+  "post_id", "platform", "date", "author", "text", "url", "category"
+)
+
+check_required_columns <- function(df, required = required_columns) {
+  missing_cols <- setdiff(required, names(df))
+  if (length(missing_cols) > 0) {
+    stop(
+      "Missing required columns: ",
+      paste(missing_cols, collapse = ", "),
+      call. = FALSE
+    )
+  }
+}
+
+normalise_category <- function(x) {
+  x <- stringr::str_to_lower(x)
+  x <- stringr::str_replace_all(x, "[-\\s]+", "_")
+  x
+}
+
+save_table <- function(df, file_name) {
+  readr::write_csv(df, here::here("outputs", "tables", file_name), na = "")
+}
+
+save_plot <- function(plot_obj, file_name, width = 10, height = 6, dpi = 320) {
+  ggplot2::ggsave(
+    filename = here::here("outputs", "figures", file_name),
+    plot = plot_obj,
+    width = width,
+    height = height,
+    dpi = dpi,
+    bg = "white"
+  )
+}
+
+interpret_kappa <- function(kappa_value) {
+  dplyr::case_when(
+    is.na(kappa_value) ~ "Not available",
+    kappa_value < 0.00 ~ "Less than chance agreement",
+    kappa_value < 0.21 ~ "Slight agreement",
+    kappa_value < 0.41 ~ "Fair agreement",
+    kappa_value < 0.61 ~ "Moderate agreement",
+    kappa_value < 0.81 ~ "Substantial agreement",
+    TRUE ~ "Almost perfect agreement"
+  )
+}
+
+message("Setup complete.")
+message("Place raw CSV files in: ", here::here("data_raw"))
+message("Outputs will be saved to: ", here::here("outputs"))
+```
+
+::: {.callout-note}
+## What is happening?
+This installs missing packages, loads the required libraries, and confirms your output folders exist.
+:::
+
+# 2) Import + Clean + Tokenise
+
+```{r section_02_import_clean_tokenise}
+#| eval: false
+#| code-fold: true
+#| code-summary: "Show import, cleaning, and tokenisation code"
+# 02 import + clean + tokenise
+# Assumes setup chunk has already been run in this QMD session.
+
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(tidytext)
+  library(janitor)
+  library(lubridate)
+  library(stringi)
+  library(SnowballC)
+  library(here)
+})
+
+raw_files <- list.files(project_paths$raw, pattern = "\\.csv$", full.names = TRUE)
+
+if (length(raw_files) == 0) {
+  stop("No CSV files found in data_raw/. Add at least one CSV and rerun.", call. = FALSE)
+}
+
+raw_posts <- purrr::map_dfr(
+  raw_files,
+  ~ readr::read_csv(.x, show_col_types = FALSE) %>%
+    mutate(source_file = basename(.x))
+)
+
+raw_posts <- janitor::clean_names(raw_posts)
+check_required_columns(raw_posts)
+
+allowed_categories <- c("weight_loss", "health_focused")
+do_stemming <- FALSE
+
+clean_posts <- raw_posts %>%
+  mutate(
+    category = normalise_category(category),
+    category = if_else(category %in% allowed_categories, category, NA_character_),
+    date_parsed = suppressWarnings(
+      parse_date_time(
+        as.character(date),
+        orders = c(
+          "Ymd HMS", "Ymd HM", "Ymd", "dmy HMS", "dmy HM", "dmy",
+          "mdy HMS", "mdy HM", "mdy", "Y-m-d", "Y/m/d"
+        ),
+        tz = "UTC"
+      )
+    ),
+    text_original = text,
+    text_no_url = str_remove_all(text_original, "https?://\\S+|www\\.\\S+"),
+    text_no_emoji = stringi::stri_replace_all_regex(text_no_url, "[\\p{So}\\p{Cn}]", " "),
+    text_no_punct = str_replace_all(text_no_emoji, "[[:punct:]]+", " "),
+    text_no_num = str_replace_all(text_no_punct, "[[:digit:]]+", " "),
+    text_clean = text_no_num %>% str_to_lower() %>% str_squish()
+  ) %>%
+  filter(!is.na(text_clean), text_clean != "")
+
+if (any(is.na(clean_posts$category))) {
+  warning("Some rows have categories outside {weight_loss, health_focused}. They are kept with NA category.")
+}
+
+readr::write_csv(clean_posts, here::here("data_clean", "posts_clean.csv"), na = "")
+saveRDS(clean_posts, here::here("data_clean", "posts_clean.rds"))
+
+tokens <- clean_posts %>%
+  select(post_id, category, date_parsed, text_clean) %>%
+  unnest_tokens(word, text_clean) %>%
+  filter(str_detect(word, "^[a-z']+$")) %>%
+  anti_join(stop_words, by = "word")
+
+if (do_stemming) {
+  tokens <- tokens %>% mutate(word = SnowballC::wordStem(word))
+}
+
+readr::write_csv(tokens, here::here("data_clean", "tokens_no_stop.csv"), na = "")
+
+message("Saved cleaned posts to data_clean/posts_clean.csv")
+message("Saved token dataset to data_clean/tokens_no_stop.csv")
+```
+
+::: {.callout-note}
+## What is happening?
+This code merges all CSV files, standardises categories, cleans text (URLs/punctuation/numbers/emojis), lowercases text, removes stopwords, and creates token-level data for analysis.
+:::
+
+Saved files:
+
+- `data_clean/posts_clean.csv`
+- `data_clean/posts_clean.rds`
+- `data_clean/tokens_no_stop.csv`
+
+# 3) Frequency + N-grams + TF-IDF
+
+```{r section_03_frequency_ngrams_tfidf}
+#| eval: false
+#| code-fold: true
+#| code-summary: "Show frequency, n-gram, and TF-IDF code"
+# 03 frequency + n-grams + TF-IDF
+
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(tidytext)
+  library(scales)
+  library(here)
+})
+
+tokens <- readr::read_csv(here::here("data_clean", "tokens_no_stop.csv"), show_col_types = FALSE)
+clean_posts <- readr::read_csv(here::here("data_clean", "posts_clean.csv"), show_col_types = FALSE)
+
+if (nrow(tokens) == 0) {
+  stop("Token dataset is empty. Run the import/clean/tokenise section first.", call. = FALSE)
+}
+
+overall_words <- tokens %>% count(word, sort = TRUE)
+words_by_category <- tokens %>% count(category, word, sort = TRUE)
+
+stop_words_vec <- tidytext::stop_words$word
+
+bigrams <- clean_posts %>%
+  select(post_id, category, text_clean) %>%
+  unnest_tokens(bigram, text_clean, token = "ngrams", n = 2) %>%
+  separate(bigram, into = c("word1", "word2"), sep = " ", fill = "right", extra = "drop") %>%
+  filter(
+    !is.na(word1), !is.na(word2),
+    !word1 %in% stop_words_vec,
+    !word2 %in% stop_words_vec
+  ) %>%
+  unite(bigram, word1, word2, sep = " ") %>%
+  count(category, bigram, sort = TRUE)
+
+trigrams <- clean_posts %>%
+  select(post_id, category, text_clean) %>%
+  unnest_tokens(trigram, text_clean, token = "ngrams", n = 3) %>%
+  separate(trigram, into = c("word1", "word2", "word3"), sep = " ", fill = "right", extra = "drop") %>%
+  filter(
+    !is.na(word1), !is.na(word2), !is.na(word3),
+    !word1 %in% stop_words_vec,
+    !word2 %in% stop_words_vec,
+    !word3 %in% stop_words_vec
+  ) %>%
+  unite(trigram, word1, word2, word3, sep = " ") %>%
+  count(category, trigram, sort = TRUE)
+
+tfidf_terms <- tokens %>%
+  count(category, word, sort = TRUE) %>%
+  bind_tf_idf(term = word, document = category, n = n) %>%
+  arrange(desc(tf_idf))
+
+save_table(overall_words, "top_words_overall.csv")
+save_table(words_by_category, "top_words_by_category.csv")
+save_table(bigrams, "top_bigrams_by_category.csv")
+save_table(trigrams, "top_trigrams_by_category.csv")
+save_table(tfidf_terms, "tfidf_by_category.csv")
+
+plot_overall <- overall_words %>%
+  slice_max(order_by = n, n = 20, with_ties = FALSE) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(x = n, y = word)) +
+  geom_col(fill = "#0D5C63") +
+  scale_x_continuous(labels = comma) +
+  labs(
+    title = "Top 20 Words Overall",
+    x = "Frequency",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 12)
+
+plot_by_category <- words_by_category %>%
+  filter(!is.na(category)) %>%
+  group_by(category) %>%
+  slice_max(order_by = n, n = 15, with_ties = FALSE) %>%
+  ungroup() %>%
+  mutate(word = tidytext::reorder_within(word, n, category)) %>%
+  ggplot(aes(x = n, y = word, fill = category)) +
+  geom_col(show.legend = FALSE) +
+  tidytext::scale_y_reordered() +
+  facet_wrap(~ category, scales = "free_y") +
+  scale_x_continuous(labels = comma) +
+  labs(
+    title = "Top Words by Category",
+    x = "Frequency",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 12)
+
+plot_tfidf <- tfidf_terms %>%
+  filter(!is.na(category)) %>%
+  group_by(category) %>%
+  slice_max(order_by = tf_idf, n = 15, with_ties = FALSE) %>%
+  ungroup() %>%
+  mutate(word = tidytext::reorder_within(word, tf_idf, category)) %>%
+  ggplot(aes(x = tf_idf, y = word, fill = category)) +
+  geom_col(show.legend = FALSE) +
+  tidytext::scale_y_reordered() +
+  facet_wrap(~ category, scales = "free_y") +
+  labs(
+    title = "Most Distinctive Terms by Category (TF-IDF)",
+    x = "TF-IDF",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 12)
+
+save_plot(plot_overall, "word_frequency_overall.png")
+save_plot(plot_by_category, "word_frequency_by_category.png")
+save_plot(plot_tfidf, "tfidf_by_category.png")
+
+message("Frequency, n-gram, and TF-IDF outputs saved.")
+```
+
+::: {.callout-note}
+## What is happening?
+This quantifies language patterns:
+
+- high-frequency terms
+- common bigrams/trigrams
+- terms that are distinctive in each category (TF-IDF)
+
+These outputs describe language differences but do not prove stigma on their own.
+:::
+
+Saved outputs:
+
+- Tables in `outputs/tables/`
+- Figures in `outputs/figures/`
+
+# 4) Sentiment Analysis (Exploratory)
+
+```{r section_04_sentiment_analysis}
+#| eval: false
+#| code-fold: true
+#| code-summary: "Show sentiment analysis code"
+# 04 sentiment analysis (exploratory, complementary only)
+
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(tidytext)
+  library(scales)
+  library(here)
+})
+
+tokens <- readr::read_csv(here::here("data_clean", "tokens_no_stop.csv"), show_col_types = FALSE)
+
+if (nrow(tokens) == 0) {
+  stop("Token dataset is empty. Run the import/clean/tokenise section first.", call. = FALSE)
+}
+
+# BING
+bing_sent <- tokens %>%
+  inner_join(get_sentiments("bing"), by = "word")
+
+overall_bing <- bing_sent %>%
+  count(sentiment, sort = TRUE) %>%
+  mutate(prop = n / sum(n))
+
+by_category_bing <- bing_sent %>%
+  filter(!is.na(category)) %>%
+  count(category, sentiment, sort = TRUE) %>%
+  group_by(category) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+# NRC (optional if lexicon unavailable in non-interactive sessions)
+nrc_lexicon <- tryCatch(
+  get_sentiments("nrc"),
+  error = function(e) {
+    warning("NRC lexicon unavailable. Skipping NRC emotion outputs. Details: ", e$message)
+    NULL
+  }
+)
+
+if (!is.null(nrc_lexicon)) {
+  nrc_sent <- tokens %>%
+    inner_join(nrc_lexicon, by = "word")
+
+  nrc_emotions <- nrc_sent %>%
+    filter(!sentiment %in% c("positive", "negative"), !is.na(category)) %>%
+    count(category, sentiment, sort = TRUE)
+} else {
+  nrc_emotions <- tibble(
+    category = character(),
+    sentiment = character(),
+    n = integer()
+  )
+}
+
+# AFINN (optional if lexicon unavailable in non-interactive sessions)
+afinn_lexicon <- tryCatch(
+  get_sentiments("afinn"),
+  error = function(e) {
+    warning("AFINN lexicon unavailable. Skipping AFINN outputs. Details: ", e$message)
+    NULL
+  }
+)
+
+if (!is.null(afinn_lexicon)) {
+  afinn_scores <- tokens %>%
+    inner_join(afinn_lexicon, by = "word") %>%
+    group_by(post_id, category) %>%
+    summarise(
+      afinn_mean = mean(value, na.rm = TRUE),
+      afinn_sum = sum(value, na.rm = TRUE),
+      matched_tokens = dplyr::n(),
+      .groups = "drop"
+    )
+
+  afinn_summary <- afinn_scores %>%
+    filter(!is.na(category)) %>%
+    group_by(category) %>%
+    summarise(
+      mean_afinn = mean(afinn_mean, na.rm = TRUE),
+      median_afinn = median(afinn_mean, na.rm = TRUE),
+      sd_afinn = sd(afinn_mean, na.rm = TRUE),
+      posts_with_scores = dplyr::n(),
+      .groups = "drop"
+    )
+} else {
+  afinn_scores <- tibble(
+    post_id = character(),
+    category = character(),
+    afinn_mean = numeric(),
+    afinn_sum = numeric(),
+    matched_tokens = integer()
+  )
+  afinn_summary <- tibble(
+    category = character(),
+    mean_afinn = numeric(),
+    median_afinn = numeric(),
+    sd_afinn = numeric(),
+    posts_with_scores = integer()
+  )
+}
+
+save_table(overall_bing, "sentiment_overall_bing.csv")
+save_table(by_category_bing, "sentiment_by_category_bing.csv")
+save_table(nrc_emotions, "sentiment_nrc_emotions_by_category.csv")
+save_table(afinn_scores, "sentiment_afinn_post_scores.csv")
+save_table(afinn_summary, "sentiment_afinn_summary_by_category.csv")
+
+plot_bing <- by_category_bing %>%
+  ggplot(aes(x = category, y = prop, fill = sentiment)) +
+  geom_col(position = "stack") +
+  scale_y_continuous(labels = percent_format()) +
+  scale_fill_manual(values = c(negative = "#B23A48", positive = "#2A9D8F")) +
+  labs(
+    title = "Sentiment Composition by Category (BING)",
+    x = NULL,
+    y = "Proportion of matched sentiment words",
+    fill = "Sentiment"
+  ) +
+  theme_minimal(base_size = 12)
+
+if (nrow(nrc_emotions) > 0) {
+  plot_nrc <- nrc_emotions %>%
+    group_by(category) %>%
+    slice_max(order_by = n, n = 8, with_ties = FALSE) %>%
+    ungroup() %>%
+    mutate(sentiment = tidytext::reorder_within(sentiment, n, category)) %>%
+    ggplot(aes(x = n, y = sentiment, fill = category)) +
+    geom_col(show.legend = FALSE) +
+    tidytext::scale_y_reordered() +
+    facet_wrap(~ category, scales = "free_y") +
+    scale_x_continuous(labels = comma) +
+    labs(
+      title = "Top NRC Emotion Terms by Category",
+      x = "Count",
+      y = NULL
+    ) +
+    theme_minimal(base_size = 12)
+}
+
+if (nrow(afinn_scores) > 0) {
+  plot_afinn <- afinn_scores %>%
+    filter(!is.na(category)) %>%
+    ggplot(aes(x = category, y = afinn_mean, fill = category)) +
+    geom_boxplot(alpha = 0.8, width = 0.55, show.legend = FALSE) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey30") +
+    labs(
+      title = "Distribution of AFINN Scores by Category",
+      x = NULL,
+      y = "Mean AFINN score per post"
+    ) +
+    theme_minimal(base_size = 12)
+}
+
+save_plot(plot_bing, "sentiment_bing_by_category.png")
+if (nrow(nrc_emotions) > 0) {
+  save_plot(plot_nrc, "sentiment_nrc_by_category.png")
+}
+if (nrow(afinn_scores) > 0) {
+  save_plot(plot_afinn, "sentiment_afinn_by_category.png")
+}
+
+message("Sentiment tables and figures saved.")
+```
+
+::: {.callout-warning}
+## What is happening?
+This uses lexicons (`bing`, `nrc`, `afinn`) to summarise emotional polarity and valence patterns.
+
+Interpretation caution for dietetics research:
+- nutrition language can be context-dependent;
+- lexicons can miss irony, clinical nuance, and stigma expressed without emotional words.
+:::
+
+# 5) Build Codebook + Coder Template
+
+```{r section_05_codebook_coder_template}
+#| eval: false
+#| code-fold: true
+#| code-summary: "Show codebook and coder template code"
+# 05 codebook + coder template
+
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(here)
+})
+
+codebook <- tibble::tribble(
+  ~code, ~label, ~definition, ~include_if, ~exclude_if, ~example,
+  "stigma_binary", "Weight stigma present (1) vs absent (0)",
+  "Overall decision for whether the post contains weight-stigmatising content.",
+  "Any explicit or implied demeaning, blaming, shaming, stereotyping, or moral judgement about body weight.",
+  "Neutral, supportive, or clinical discussion without demeaning language.",
+  "'People are overweight because they are lazy.'",
+
+  "explicit_blame", "Explicit blame",
+  "Directly attributes higher body weight to personal moral failure or laziness.",
+  "Statements that assign fault to individuals for body size.",
+  "Structural/contextual discussion without blame.",
+  "'No excuses, weight gain is your own fault.'",
+
+  "moralising_food_body", "Moralising food/body language",
+  "Frames foods or bodies as morally good/bad, clean/dirty, worthy/unworthy.",
+  "Good/bad person framing based on eating or body size.",
+  "Practical nutrition advice without moral labels.",
+  "'Cheat meals make you weak and disgusting.'",
+
+  "appearance_judgement", "Appearance-focused judgement",
+  "Judges personal worth or social value based on body appearance.",
+  "Ridicule, disgust, or social devaluation tied to body shape.",
+  "Neutral reference to appearance in a non-judgemental context.",
+  "'Beach bodies are for disciplined people only.'",
+
+  "stereotyping_larger_bodies", "Stereotyping larger bodies",
+  "Uses generalisations about people in larger bodies as a group.",
+  "Claims that a group is lazy, undisciplined, unhealthy, etc.",
+  "Post-specific behaviour without broad group assumptions.",
+  "'Overweight people never care about health.'",
+
+  "healthism_personal_failure", "Healthism / implied personal failure",
+  "Implies health status is fully controlled by individual choices and willpower.",
+  "Ignores social, medical, economic, or environmental determinants of health.",
+  "Balanced discussion of multiple determinants.",
+  "'If you are sick, you just didn't try hard enough.'",
+
+  "neutral_supportive", "Neutral/supportive/non-stigmatising",
+  "Content that is supportive, neutral, or non-judgemental.",
+  "Person-centred, empathetic, non-shaming tone.",
+  "Any explicit stigmatizing language.",
+  "'Health goals should be tailored and respectful to each person.'"
+)
+
+readr::write_csv(codebook, here::here("docs", "codebook", "weight_stigma_codebook.csv"), na = "")
+
+coder_instructions <- c(
+  "# Coder Instructions: Weight Stigma in Nutrition-Related Posts",
+  "",
+  "## Aim",
+  "Classify each post for weight stigma using the codebook in this folder.",
+  "",
+  "## Core principles",
+  "1. Code stigma separately from sentiment. A negative tone is not automatically stigma.",
+  "2. Use the full post context before assigning codes.",
+  "3. Assign stigma_binary = 1 when any stigma category applies.",
+  "4. Assign stigma_binary = 0 when no stigma categories apply.",
+  "5. Mark neutral_supportive = 1 when language is clearly non-stigmatising.",
+  "",
+  "## Coding steps",
+  "1. Read post text once for context.",
+  "2. Decide stigma_binary (1/0).",
+  "3. Apply all relevant multi-codes (1 = present, 0 = absent).",
+  "4. Add short justification in notes for difficult cases.",
+  "",
+  "## Independent coding",
+  "Each coder should complete their own file without discussing coding decisions until reliability is calculated.",
+  "",
+  "## File naming",
+  "Save your file as docs/codebook/ratings/coder_<initials>.csv"
+)
+
+writeLines(coder_instructions, here::here("docs", "codebook", "coder_instructions.md"))
+
+posts_path <- here::here("data_clean", "posts_clean.csv")
+
+if (file.exists(posts_path)) {
+  posts <- readr::read_csv(posts_path, show_col_types = FALSE)
+} else {
+  posts <- readr::read_csv(here::here("data_clean", "example_cleaned_posts.csv"), show_col_types = FALSE)
+}
+
+coder_template <- posts %>%
+  transmute(
+    post_id,
+    platform,
+    date = date,
+    category,
+    text,
+    url,
+    stigma_binary = NA_integer_,
+    explicit_blame = NA_integer_,
+    moralising_food_body = NA_integer_,
+    appearance_judgement = NA_integer_,
+    stereotyping_larger_bodies = NA_integer_,
+    healthism_personal_failure = NA_integer_,
+    neutral_supportive = NA_integer_,
+    notes = NA_character_,
+    coder_id = NA_character_
+  )
+
+readr::write_csv(coder_template, here::here("docs", "codebook", "coder_template.csv"), na = "")
+
+message("Codebook saved to docs/codebook/weight_stigma_codebook.csv")
+message("Coder template saved to docs/codebook/coder_template.csv")
+```
+
+::: {.callout-note}
+## What is happening?
+This generates a draft stigma codebook and a coder template with binary + multi-code columns.
+
+Coders should rate independently and save files to `docs/codebook/ratings/`.
+:::
+
+Generated files:
+
+- `docs/codebook/weight_stigma_codebook.csv`
+- `docs/codebook/coder_instructions.md`
+- `docs/codebook/coder_template.csv`
+
+# 6) Inter-rater Reliability
+
+```{r section_06_interrater_reliability}
+#| eval: false
+#| code-fold: true
+#| code-summary: "Show inter-rater reliability code"
+# 06 inter-rater reliability
+
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(janitor)
+  library(irr)
+  library(here)
+})
+
+rating_files <- list.files(project_paths$ratings, pattern = "\\.csv$", full.names = TRUE)
+
+if (length(rating_files) == 0) {
+  stop(
+    "No coder rating files found in docs/codebook/ratings/. Add coder CSV files and rerun.",
+    call. = FALSE
+  )
+}
+
+ratings_long <- purrr::map_dfr(
+  rating_files,
+  ~ readr::read_csv(.x, show_col_types = FALSE) %>%
+    janitor::clean_names() %>%
+    mutate(source_file = basename(.x))
+)
+
+required_rating_cols <- c("post_id", "stigma_binary")
+missing_rating_cols <- setdiff(required_rating_cols, names(ratings_long))
+if (length(missing_rating_cols) > 0) {
+  stop(
+    "Rating files must include columns: post_id, stigma_binary. Missing: ",
+    paste(missing_rating_cols, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+if (!"coder_id" %in% names(ratings_long)) {
+  ratings_long <- ratings_long %>%
+    mutate(coder_id = stringr::str_remove(source_file, "\\.csv$"))
+}
+
+ratings_long <- ratings_long %>%
+  mutate(stigma_binary = as.character(stigma_binary)) %>%
+  filter(!is.na(post_id), !is.na(coder_id), !is.na(stigma_binary)) %>%
+  distinct(post_id, coder_id, .keep_all = TRUE)
+
+ratings_wide <- ratings_long %>%
+  select(post_id, coder_id, stigma_binary) %>%
+  pivot_wider(names_from = coder_id, values_from = stigma_binary)
+
+coder_cols <- setdiff(names(ratings_wide), "post_id")
+
+if (length(coder_cols) < 2) {
+  stop("At least two coders are required for reliability analysis.", call. = FALSE)
+}
+
+results <- list()
+
+cohen_data <- ratings_wide %>%
+  select(all_of(coder_cols[1:2])) %>%
+  drop_na() %>%
+  mutate(across(everything(), as.factor))
+
+if (nrow(cohen_data) > 0) {
+  cohen <- irr::kappa2(cohen_data, weight = "unweighted")
+  cohen_kappa <- unname(cohen$value)
+  results$cohen <- tibble(
+    metric = "Cohen's kappa",
+    raters = paste(coder_cols[1], coder_cols[2], sep = " vs "),
+    value = cohen_kappa,
+    interpretation = interpret_kappa(cohen_kappa)
+  )
+
+  confusion <- table(
+    rater_1 = cohen_data[[1]],
+    rater_2 = cohen_data[[2]]
+  )
+
+  confusion_df <- as.data.frame(confusion) %>%
+    rename(count = Freq)
+
+  save_table(confusion_df, "reliability_confusion_matrix.csv")
+
+  confusion_plot <- confusion_df %>%
+    ggplot(aes(x = rater_1, y = rater_2, fill = count)) +
+    geom_tile() +
+    geom_text(aes(label = count), color = "white", fontface = "bold") +
+    scale_fill_gradient(low = "#4A6FA5", high = "#1B1B3A") +
+    labs(
+      title = "Confusion Matrix: First Two Coders",
+      x = coder_cols[1],
+      y = coder_cols[2],
+      fill = "Count"
+    ) +
+    theme_minimal(base_size = 12)
+
+  save_plot(confusion_plot, "reliability_confusion_matrix.png", width = 7, height = 6)
+} else {
+  warning("No overlapping non-missing rows for the first two coders. Cohen's kappa not computed.")
+}
+
+if (length(coder_cols) > 2) {
+  fleiss_data <- ratings_wide %>%
+    select(all_of(coder_cols)) %>%
+    drop_na() %>%
+    mutate(across(everything(), as.factor))
+
+  if (nrow(fleiss_data) > 0) {
+    fleiss <- irr::kappam.fleiss(as.matrix(fleiss_data))
+    fleiss_kappa <- unname(fleiss$value)
+    results$fleiss <- tibble(
+      metric = "Fleiss' kappa",
+      raters = paste(length(coder_cols), "coders"),
+      value = fleiss_kappa,
+      interpretation = interpret_kappa(fleiss_kappa)
+    )
+  } else {
+    warning("No complete rows across all coders. Fleiss' kappa not computed.")
+  }
+}
+
+disagreements <- ratings_wide %>%
+  rowwise() %>%
+  mutate(disagree = dplyr::n_distinct(stats::na.omit(c_across(all_of(coder_cols)))) > 1) %>%
+  ungroup() %>%
+  filter(disagree)
+
+posts_path <- here::here("data_clean", "posts_clean.csv")
+if (file.exists(posts_path)) {
+  posts <- readr::read_csv(posts_path, show_col_types = FALSE) %>%
+    select(post_id, category, text, url)
+  disagreements <- disagreements %>% left_join(posts, by = "post_id")
+}
+
+save_table(disagreements, "reliability_disagreements_for_adjudication.csv")
+
+if (length(results) > 0) {
+  reliability_summary <- bind_rows(results)
+  save_table(reliability_summary, "reliability_summary.csv")
+  print(reliability_summary)
+} else {
+  warning("No kappa values were computed from the provided data.")
+}
+
+message("Reliability outputs saved to outputs/tables and outputs/figures.")
+```
+
+::: {.callout-note}
+## What is happening?
+This imports coder ratings and computes:
+
+- Cohen's kappa (two coders)
+- Fleiss' kappa (more than two coders)
+- confusion matrix
+- disagreement rows for adjudication
+
+Use disagreement output to resolve final coding decisions.
+:::
+
+# 7) Statistical Comparison of Stigma by Category
+
+```{r section_07_stats_comparison}
+#| eval: false
+#| code-fold: true
+#| code-summary: "Show statistical comparison code"
+# 07 statistical comparison + final visuals
+
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(effectsize)
+  library(scales)
+  library(here)
+})
+
+posts <- readr::read_csv(here::here("data_clean", "posts_clean.csv"), show_col_types = FALSE)
+
+adjudicated_path <- here::here("docs", "codebook", "adjudicated_codes.csv")
+
+if (!file.exists(adjudicated_path)) {
+  stop(
+    "Missing docs/codebook/adjudicated_codes.csv. Create an adjudicated file with at least post_id and stigma_binary.",
+    call. = FALSE
+  )
+}
+
+codes <- readr::read_csv(adjudicated_path, show_col_types = FALSE)
+
+required_code_cols <- c("post_id", "stigma_binary")
+missing_code_cols <- setdiff(required_code_cols, names(codes))
+if (length(missing_code_cols) > 0) {
+  stop(
+    "Adjudicated file must include post_id and stigma_binary. Missing: ",
+    paste(missing_code_cols, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+analysis_df <- posts %>%
+  select(post_id, category) %>%
+  left_join(codes, by = "post_id") %>%
+  mutate(
+    category = normalise_category(category),
+    stigma_binary = as.integer(stigma_binary)
+  ) %>%
+  filter(!is.na(category), !is.na(stigma_binary))
+
+prevalence <- analysis_df %>%
+  count(category, stigma_binary, name = "n") %>%
+  group_by(category) %>%
+  mutate(percent = 100 * n / sum(n)) %>%
+  ungroup() %>%
+  mutate(stigma_binary = factor(stigma_binary, levels = c(0, 1), labels = c("Absent", "Present")))
+
+save_table(prevalence, "stigma_prevalence_by_category.csv")
+
+contingency <- table(analysis_df$category, analysis_df$stigma_binary)
+chi <- chisq.test(contingency, correct = FALSE)
+effect <- effectsize::cramers_v(contingency)
+
+chi_results <- tibble(
+  test = "Chi-square test of stigma presence by category",
+  statistic = unname(chi$statistic),
+  df = unname(chi$parameter),
+  p_value = chi$p.value,
+  cramers_v = unname(effect$Cramers_v),
+  interpretation = case_when(
+    effect$Cramers_v < 0.10 ~ "Very small",
+    effect$Cramers_v < 0.30 ~ "Small",
+    effect$Cramers_v < 0.50 ~ "Medium",
+    TRUE ~ "Large"
+  )
+)
+
+save_table(chi_results, "stigma_chi_square_results.csv")
+
+plot_prevalence <- prevalence %>%
+  ggplot(aes(x = category, y = percent, fill = stigma_binary)) +
+  geom_col(position = "stack") +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  scale_fill_manual(values = c("Absent" = "#6C757D", "Present" = "#B23A48")) +
+  labs(
+    title = "Weight Stigma Prevalence by Category",
+    x = NULL,
+    y = "Percent of posts",
+    fill = "Stigma"
+  ) +
+  theme_minimal(base_size = 12)
+
+save_plot(plot_prevalence, "stigma_prevalence_by_category.png")
+
+multi_code_cols <- c(
+  "explicit_blame",
+  "moralising_food_body",
+  "appearance_judgement",
+  "stereotyping_larger_bodies",
+  "healthism_personal_failure",
+  "neutral_supportive"
+)
+
+available_multi_codes <- intersect(multi_code_cols, names(codes))
+
+if (length(available_multi_codes) > 0) {
+  multi_long <- analysis_df %>%
+    pivot_longer(cols = all_of(available_multi_codes), names_to = "code", values_to = "present") %>%
+    mutate(present = as.integer(present)) %>%
+    filter(!is.na(present), present == 1) %>%
+    count(category, code, name = "n")
+
+  save_table(multi_long, "stigma_multicode_counts.csv")
+
+  plot_multicode <- multi_long %>%
+    ggplot(aes(x = n, y = reorder(code, n), fill = category)) +
+    geom_col(position = "dodge") +
+    labs(
+      title = "Frequency of Stigma Subtypes by Category",
+      x = "Count",
+      y = NULL,
+      fill = "Category"
+    ) +
+    theme_minimal(base_size = 12)
+
+  save_plot(plot_multicode, "stigma_multicode_by_category.png")
+}
+
+message("Statistical outputs saved to outputs/tables and outputs/figures.")
+```
+
+::: {.callout-note}
+## What is happening?
+This joins final adjudicated codes to categories, calculates prevalence, runs chi-square tests, and reports effect size (Cramer's V).
+:::
+
+Required file before running section `7) Statistical Comparison of Stigma by Category`:
+
+- `docs/codebook/adjudicated_codes.csv`
+
+You can start from:
+
+- `docs/codebook/adjudicated_codes_template.csv`
+
+# Dissertation Write-up Templates
+
+## Methods wording (example)
+
+"Weight-stigmatising content was identified primarily through human coding using a predefined codebook. Posts were coded as stigma present versus absent, with additional subtype codes (e.g., explicit blame, moralising language, appearance judgement)."
+
+"Lexicon-based sentiment analysis was conducted as a complementary exploratory method and was not used as a direct measure of weight stigma."
+
+"Inter-rater reliability was evaluated using Cohen's kappa (two coders) and Fleiss' kappa when more than two coders were available."
+
+## Results wording (placeholders)
+
+"A total of **[N]** posts were analysed (**[n1] weight_loss**, **[n2] health_focused**)."
+
+"Weight stigma was identified in **[x%]** of weight_loss posts and **[y%]** of health_focused posts."
+
+"The association between post category and stigma presence was **[significant/not significant]** (chi-square(**[df]**) = **[value]**, p = **[value]**, Cramer's V = **[value]**)."
+
+"Inter-rater agreement for binary stigma coding was **[kappa]**, indicating **[interpretation]** agreement."
+
+# Caption Starters
+
+- Figure: "Top terms by post category after stopword removal."
+- Figure: "Most distinctive terms by category using TF-IDF."
+- Figure: "Distribution of lexicon sentiment scores by post category."
+- Figure: "Prevalence of weight stigma by post category."
+- Table: "Inter-rater reliability statistics for stigma coding."
+
+# Final Checklist
+
+::: {.callout-tip}
+## Before submission
+- Confirm your final run used the real dataset in `data_raw/`.
+- Keep all generated tables/figures in `outputs/`.
+- Report stigma coding and sentiment as separate constructs.
+- State limitations of lexicon methods clearly.
+- Emphasise practical implications for dietetic communication and patient care.
+:::

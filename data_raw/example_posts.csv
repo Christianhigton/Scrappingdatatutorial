@@ -1,0 +1,11 @@
+post_id,platform,date,author,text,url,category
+P001,instagram,2026-03-01,@nutriaccount,"Small daily habits can improve health outcomes over time.",https://example.com/p1,health_focused
+P002,tiktok,2026-03-02,@coachfit,"No excuses: if your body is larger, you are just not disciplined.",https://example.com/p2,weight_loss
+P003,instagram,2026-03-03,@dietitian_a,"Balanced meals can support energy, mood, and recovery.",https://example.com/p3,health_focused
+P004,x,2026-03-04,@fatlossdaily,"Cheat foods are bad and make people weak.",https://example.com/p4,weight_loss
+P005,tiktok,2026-03-05,@wellbeinghub,"Healthcare should be respectful and person-centred.",https://example.com/p5,health_focused
+P006,instagram,2026-03-06,@shredzone,"Beach bodies are for people who work hard, not lazy people.",https://example.com/p6,weight_loss
+P007,x,2026-03-07,@publichealth,"Community food access matters for nutrition outcomes.",https://example.com/p7,health_focused
+P008,tiktok,2026-03-08,@trenddiet,"People with bigger bodies simply don't care about health.",https://example.com/p8,weight_loss
+P009,instagram,2026-03-09,@sportsrd,"Protein, sleep, and hydration all contribute to performance.",https://example.com/p9,health_focused
+P010,x,2026-03-10,@quickfixplan,"Weight gain is a personal failure, stop making excuses.",https://example.com/p10,weight_loss

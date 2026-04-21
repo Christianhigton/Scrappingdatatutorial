@@ -1,0 +1,11 @@
+post_id,stigma_binary,explicit_blame,moralising_food_body,appearance_judgement,stereotyping_larger_bodies,healthism_personal_failure,neutral_supportive,adjudicator_notes
+P001,0,0,0,0,0,0,1,Supportive tone
+P002,1,1,0,0,0,1,0,Direct blame language
+P003,0,0,0,0,0,0,1,Neutral nutrition advice
+P004,1,0,1,0,0,0,0,Moralising terms
+P005,0,0,0,0,0,0,1,Respectful language
+P006,1,1,0,1,0,0,0,Appearance judgement and blame
+P007,0,0,0,0,0,0,1,Contextual public health framing
+P008,1,0,0,0,1,0,0,Stereotype about larger bodies
+P009,0,0,0,0,0,0,1,Neutral performance framing
+P010,1,1,0,0,0,1,0,Personal failure framing

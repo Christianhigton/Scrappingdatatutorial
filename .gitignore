@@ -1,0 +1,5 @@
+.r_libs/
+.Rhistory
+.RData
+.Rproj.user/
+_site/

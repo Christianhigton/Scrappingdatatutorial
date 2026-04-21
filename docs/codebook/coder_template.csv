@@ -1,0 +1,11 @@
+post_id,platform,date,category,text,url,stigma_binary,explicit_blame,moralising_food_body,appearance_judgement,stereotyping_larger_bodies,healthism_personal_failure,neutral_supportive,notes,coder_id
+P001,instagram,2026-03-01,health_focused,Small daily habits can improve health outcomes over time.,https://example.com/p1,,,,,,,,,
+P002,tiktok,2026-03-02,weight_loss,"No excuses: if your body is larger, you are just not disciplined.",https://example.com/p2,,,,,,,,,
+P003,instagram,2026-03-03,health_focused,"Balanced meals can support energy, mood, and recovery.",https://example.com/p3,,,,,,,,,
+P004,x,2026-03-04,weight_loss,Cheat foods are bad and make people weak.,https://example.com/p4,,,,,,,,,
+P005,tiktok,2026-03-05,health_focused,Healthcare should be respectful and person-centred.,https://example.com/p5,,,,,,,,,
+P006,instagram,2026-03-06,weight_loss,"Beach bodies are for people who work hard, not lazy people.",https://example.com/p6,,,,,,,,,
+P007,x,2026-03-07,health_focused,Community food access matters for nutrition outcomes.,https://example.com/p7,,,,,,,,,
+P008,tiktok,2026-03-08,weight_loss,People with bigger bodies simply don't care about health.,https://example.com/p8,,,,,,,,,
+P009,instagram,2026-03-09,health_focused,"Protein, sleep, and hydration all contribute to performance.",https://example.com/p9,,,,,,,,,
+P010,x,2026-03-10,weight_loss,"Weight gain is a personal failure, stop making excuses.",https://example.com/p10,,,,,,,,,

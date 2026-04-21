@@ -1,0 +1,4 @@
+category,sentiment,n,prop
+weight_loss,negative,8,0.8888888888888888
+health_focused,positive,5,1
+weight_loss,positive,1,0.1111111111111111
