@@ -32,3 +32,17 @@ Required columns:
 - Tables: `outputs/tables/`
 - Codebook assets: `docs/codebook/`
 - Quarto tutorial: `report/qmd_tutorial_weight_stigma_project.qmd`
+
+## GitHub Pages (No Actions)
+
+This repo is configured for branch-based Pages deployment (not GitHub Actions):
+
+1. In GitHub, open `Settings -> Pages`.
+2. Set `Source` to `Deploy from a branch`.
+3. Choose branch `main` and folder `/ (root)`.
+4. Save.
+
+The live page is served from:
+
+- `index.html`
+- `qmd_tutorial_weight_stigma_project_files/` (page assets)
